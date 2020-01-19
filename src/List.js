@@ -1,58 +1,47 @@
-import React from "react";
-import {useHistory, useParams} from "react-router-dom";
-import {BRAND_TERM_PREFIX, STYLE_PREFIX, TERM_PREFIX} from "./constants";
+import React, {memo} from "react";
+import {useHistory, useLocation} from "react-router-dom";
 
-const List = ({list, param, prefix}) => {
+const List = ({list, prefix, defaultValue = -1}) => {
   const history = useHistory();
-  const params = useParams();
+  const location = useLocation();
 
   const selectOption = (list, id, prefix) => {
-    const item = list.find(item => item.id === +id);
+    const currentUrl = location.pathname;
+    let params = currentUrl.slice(1).split('/');
 
-    switch (prefix) {
-      case TERM_PREFIX:
-        history.push({
-          pathname: `/${item ? item.slug : 'empty'}/${params.brandTerm || 'empty'}/${params.style || 'empty'}`,
-        });
-        break;
+    if (+id === -1) {
+      params = params.filter(param => !param.startsWith(prefix));
+    } else {
+      const item = list.find(item => item.id === +id);
 
-      case BRAND_TERM_PREFIX:
-        history.push({
-          pathname: `/${params.term || 'empty'}/${item ? item.slug : 'empty'}/${params.style || 'empty'}`,
-        });
-        break;
+      if (item.hasOwnProperty('slug')) {
+        if(params.every(param => param === '')) {
+          params = [];
+        }
 
-      case STYLE_PREFIX:
-        history.push({
-          pathname: `/${params.term || 'empty'}/${params.brandTerm || 'empty'}/${item ? item.slug : 'empty'}`,
-        });
-        break;
+        if (params.some(param => param.startsWith(prefix))) {
+          params = params.map(param => {
+            if(param.startsWith(prefix)) {
+              return prefix + item.slug;
+            }
 
-      default:
-        history.push({
-          pathname: `/${params.term || 'empty'}/${params.brandTerm || 'empty'}/${params.style || 'empty'}`,
-        });
-    }
-  };
-
-  const setDefaultValue = (list, urlParam, prefix) => {
-    if (!urlParam) {
-      return -1;
+            return param;
+          });
+        } else {
+          params.push(prefix + item.slug);
+        }
+      }
     }
 
-    const value = list.find(item => item.slug === urlParam.replace(new RegExp(prefix), ''));
-
-    if (value) {
-      return value.id;
-    }
-
-    return -1;
+    history.push({
+      pathname: `/${params.join('/')}`,
+    });
   };
 
   return (
     <select
       onChange={(e) => selectOption(list, e.target.value, prefix)}
-      defaultValue={setDefaultValue(list, param, prefix)}
+      defaultValue={defaultValue}
     >
       <option value="-1">{''}</option>
       {list.map((item) => <option
@@ -65,4 +54,4 @@ const List = ({list, param, prefix}) => {
   );
 };
 
-export default List;
+export default memo(List);

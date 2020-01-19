@@ -1,17 +1,17 @@
-import React, {useState, useEffect} from "react";
-import {useParams} from "react-router-dom";
+import React, {useState, useEffect, memo} from "react";
+import {useLocation} from "react-router-dom";
 import {getTermsFromServer, getBrandTermsFromServer, getStylesFromServer, getSelectedParamsFromServer} from "./api";
 
 import List from "./List";
 import {BRAND_TERM_PREFIX, STYLE_PREFIX, TERM_PREFIX} from "./constants";
 
 const ListsPage = () => {
+  const [defaultValues, setDefaultValues] = useState(null);
   const [terms, setTerms] = useState([]);
   const [brandsTerms, setBrandsTerms] = useState([]);
   const [styles, setStyles] = useState([]);
-  const [selectedParams, setSelectedParams] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const params = useParams();
+  const location = useLocation();
 
 
   const loadListValues = async () => {
@@ -19,7 +19,6 @@ const ListsPage = () => {
       termsFromServer,
       brandsTermsFromServer,
       stylesFromServer,
-      selectedParamsFromServer,
     ] = await Promise.all(
       [
         getTermsFromServer(),
@@ -32,12 +31,33 @@ const ListsPage = () => {
     setTerms(termsFromServer.data);
     setBrandsTerms(brandsTermsFromServer.data);
     setStyles(stylesFromServer.data);
-    setSelectedParams(selectedParamsFromServer);
     setIsLoading(false);
   };
-  console.log(params)
+
+  const getDefaultValues = async () => {
+    const currentUrl = location.pathname;
+    const message = {};
+
+    currentUrl.slice(1).split('/').forEach(item => {
+      if (item.slice(0, TERM_PREFIX.length) === TERM_PREFIX) {
+        message.service_slug = item.slice(TERM_PREFIX.length);
+      }
+
+      if (item.slice(0, BRAND_TERM_PREFIX.length) === BRAND_TERM_PREFIX) {
+        message.brand_slug = item.slice(BRAND_TERM_PREFIX.length);
+      }
+
+      if (item.slice(0, STYLE_PREFIX.length) === STYLE_PREFIX) {
+        message.style_slug = item.slice(STYLE_PREFIX.length);
+      }
+    });
+
+    setDefaultValues(await getSelectedParamsFromServer(message));
+  };
+
   useEffect(() => {
     loadListValues();
+    getDefaultValues();
   }, []);
 
   return isLoading
@@ -46,11 +66,14 @@ const ListsPage = () => {
     )
     : (
       <>
-        <List list={terms} param={selectedParams.service.slug || params.term} prefix={TERM_PREFIX}/>
-        <List list={brandsTerms} param={selectedParams.brand.slug || params.brandTerm} prefix={BRAND_TERM_PREFIX}/>
-        <List list={styles} param={selectedParams.style.slug || params.style} prefix={STYLE_PREFIX}/>
+        <List list={terms} prefix={TERM_PREFIX}
+              defaultValue={defaultValues.service.hasOwnProperty('id') ? defaultValues.service.id : null}/>
+        <List list={brandsTerms} prefix={BRAND_TERM_PREFIX}
+              defaultValue={defaultValues.brand.hasOwnProperty('id') ? defaultValues.brand.id : null}/>
+        <List list={styles} prefix={STYLE_PREFIX}
+              defaultValue={defaultValues.style.hasOwnProperty('id') ? defaultValues.style.id : null}/>
       </>
     );
 };
 
-export default ListsPage;
+export default memo(ListsPage);

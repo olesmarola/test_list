@@ -20,8 +20,8 @@ export const getStylesFromServer = async() => {
   return response.json();
 };
 
-export const getSelectedParamsFromServer = async() => {
-  const response = await fetch(BASE_URL + SELECTED_PARAMS);
+export const getSelectedParamsFromServer = async(data) => {
+  const response = await fetch(BASE_URL + SELECTED_PARAMS + `?${new URLSearchParams(data).toString()}`);
 
   return response.json();
 };

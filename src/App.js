@@ -5,7 +5,7 @@ import ListsPage from "./ListsPage";
 import './App.css';
 
 const App = () => (
-  <Route path="/:term?/:brandTerm?/:style?" component={ListsPage}/>
+  <Route path="/" component={ListsPage}/>
 );
 
 export default App;
